@@ -1,0 +1,1865 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>БЕГУ К СЕБЕ — трекер прогрессии</title>
+<style>
+  :root{
+    --bg:#0a0a0a;
+    --bg-card:#161616;
+    --bg-card-2:#1e1e1e;
+    --lime:#ccff00;
+    --white:#ffffff;
+    --gray:#8a8a8a;
+    --gray-dim:#444;
+    --red:#ff4d4d;
+    --border:#2a2a2a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{
+    background:var(--bg);
+    color:var(--white);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-tap-highlight-color:transparent;
+    overscroll-behavior-y:none;
+    max-width:100vw;
+  }
+  body{padding-bottom:90px;min-height:100vh;overflow-x:hidden;}
+  .wrap{max-width:480px;margin:0 auto;padding:0 16px;}
+
+  @keyframes fadeSlideUp{
+    from{opacity:0;transform:translateY(14px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+  @keyframes slideInRight{
+    from{opacity:0;transform:translateX(24px);}
+    to{opacity:1;transform:translateX(0);}
+  }
+  @keyframes pulseGlow{
+    0%,100%{box-shadow:0 0 0 0 rgba(204,255,0,0.35);}
+    50%{box-shadow:0 0 0 8px rgba(204,255,0,0);}
+  }
+  @keyframes dashSlide{
+    from{transform:translateX(-100%);}
+    to{transform:translateX(0);}
+  }
+  @keyframes trophyBounce{
+    0%{transform:scale(0) rotate(-15deg);opacity:0;}
+    50%{transform:scale(1.3) rotate(8deg);opacity:1;}
+    70%{transform:scale(0.9) rotate(-4deg);}
+    100%{transform:scale(1) rotate(0);}
+  }
+  #goalWinEmoji{
+    animation:trophyBounce .6s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;}
+  }
+
+  /* ===== HEADER ===== */
+  .header{
+    padding:20px 16px 16px;
+    background:var(--bg);
+    position:sticky;top:0;z-index:40;
+    border-bottom:1px solid var(--border);
+    position:relative;
+    overflow:hidden;
+  }
+  .header::after{
+    content:'';
+    position:absolute;
+    bottom:-1px;left:0;
+    width:64px;height:3px;
+    background:var(--lime);
+    clip-path:polygon(0 0, 100% 0, 88% 100%, 0% 100%);
+    animation:dashSlide .6s cubic-bezier(.2,.9,.2,1) both;
+  }
+  .header-row{display:flex;align-items:center;justify-content:space-between;max-width:480px;margin:0 auto;}
+  .brand{
+    font-weight:900;
+    font-size:15px;
+    letter-spacing:0.5px;
+    line-height:1.1;
+    font-style:italic;
+    transform:skewX(-3deg);
+    display:inline-block;
+  }
+  .brand .lock{color:var(--lime);display:inline-block;animation:pulseGlow 2.2s infinite;border-radius:50%;}
+  .user-pill{
+    display:flex;align-items:center;gap:8px;
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:100px;
+    padding:6px 12px 6px 6px;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+    transition:transform .15s, border-color .15s;
+  }
+  .user-pill:active{transform:scale(0.95);border-color:var(--lime);}
+  .user-avatar{
+    width:24px;height:24px;border-radius:50%;
+    background:var(--lime);color:#0a0a0a;
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:900;
+  }
+  .title-block{
+    padding:22px 16px 4px;
+    max-width:480px;margin:0 auto;
+    animation:fadeSlideUp .5s ease both;
+    position:relative;
+  }
+  .title-block h1{
+    font-size:30px;
+    font-weight:900;
+    letter-spacing:-0.8px;
+    line-height:1.0;
+    text-transform:uppercase;
+    font-style:italic;
+  }
+  .title-block .accent{
+    color:var(--lime);
+    position:relative;
+    display:inline-block;
+  }
+  .title-block p{color:var(--gray);font-size:13px;margin-top:6px;font-weight:500;font-style:normal;}
+
+  /* ===== NAV TABS ===== */
+  .tabs{
+    display:flex;gap:6px;
+    padding:16px 16px 0;
+    max-width:480px;margin:0 auto;
+    overflow-x:auto;
+    animation:fadeSlideUp .5s ease .05s both;
+  }
+  .tab{
+    flex:1;
+    text-align:center;
+    padding:11px 4px;
+    font-size:12px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:0.3px;
+    color:var(--gray);
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    cursor:pointer;
+    white-space:nowrap;
+    transition:transform .15s, background .15s, color .15s, border-color .15s;
+    clip-path:polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  }
+  .tab:active{transform:scale(0.96);}
+  .tab.active{
+    background:var(--lime);
+    color:#0a0a0a;
+    border-color:var(--lime);
+  }
+
+  .screen{display:none;padding:18px 16px 0;max-width:480px;margin:0 auto;}
+  .screen.active{display:block;animation:fadeSlideUp .3s ease both;}
+
+  /* ===== STAT CARDS ===== */
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .stat-grid.three{grid-template-columns:1fr 1fr 1fr;}
+  .stat-card{
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:14px 14px 14px 4px;
+    padding:14px 14px 12px;
+    position:relative;
+    overflow:hidden;
+    animation:fadeSlideUp .45s ease both;
+    transition:border-color .2s, transform .15s;
+  }
+  .stat-card::before{
+    content:'';
+    position:absolute;
+    top:0;right:0;
+    width:0;height:0;
+    border-style:solid;
+    border-width:0 18px 18px 0;
+    border-color:transparent var(--border) transparent transparent;
+    transition:border-color .2s;
+  }
+  .stat-card:active{transform:scale(0.97);border-color:var(--lime);}
+  .stat-card:active::before{border-color:transparent var(--lime) transparent transparent;}
+  .stat-grid .stat-card:nth-child(1){animation-delay:.05s;}
+  .stat-grid .stat-card:nth-child(2){animation-delay:.1s;}
+  .stat-grid.three .stat-card:nth-child(3){animation-delay:.15s;}
+  .stat-label{
+    font-size:10.5px;
+    color:var(--gray);
+    text-transform:uppercase;
+    font-weight:800;
+    letter-spacing:0.4px;
+    margin-bottom:6px;
+  }
+  .stat-value{
+    font-family:'SF Mono',Consolas,Monaco,monospace;
+    font-size:24px;
+    font-weight:700;
+    line-height:1;
+  }
+  .stat-value .unit{font-size:13px;color:var(--gray);font-weight:600;margin-left:3px;}
+  .stat-value.lime{color:var(--lime);}
+
+  /* ===== SECTION HEAD ===== */
+  .sec-head{
+    display:flex;align-items:baseline;justify-content:space-between;
+    margin:20px 0 10px;
+  }
+  .sec-head h2{
+    font-size:13px;
+    text-transform:uppercase;
+    font-weight:800;
+    letter-spacing:0.5px;
+    color:var(--white);
+  }
+  .sec-head span{font-size:12px;color:var(--gray);font-weight:600;}
+
+  /* ===== CHART ===== */
+  .chart-card{
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:16px 12px 8px;
+    margin-bottom:6px;
+  }
+  .chart-wrap{position:relative;height:170px;}
+
+  /* ===== GOAL ===== */
+  .goal-card{
+    background:linear-gradient(180deg,#1c1f0a,#161616);
+    border:1px solid #3a4012;
+    border-radius:14px 14px 14px 4px;
+    padding:16px;
+    margin-bottom:14px;
+    animation:fadeSlideUp .4s ease both;
+  }
+  .goal-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+  .goal-top .goal-name{font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:0.3px;font-style:italic;}
+  .goal-top .goal-pct{font-family:monospace;font-size:14px;font-weight:700;color:var(--lime);}
+  .goal-bar-track{height:10px;background:#000;border-radius:100px;overflow:hidden;border:1px solid var(--border);}
+  .goal-bar-fill{
+    height:100%;background:var(--lime);border-radius:100px;
+    transition:width .6s cubic-bezier(.2,.9,.2,1);
+    position:relative;overflow:hidden;
+  }
+  .goal-bar-fill::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,0.55) 50%,transparent 70%);
+    animation:shimmer 2.4s infinite;
+  }
+  @keyframes shimmer{from{transform:translateX(-100%);}to{transform:translateX(100%);}}
+  .goal-sub{display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--gray);font-weight:600;}
+  .goal-empty{
+    border:1px dashed var(--border);
+    border-radius:14px;
+    padding:20px 16px;
+    text-align:center;
+    color:var(--gray);
+    font-size:13px;
+    margin-bottom:14px;
+  }
+  .goal-empty button{margin-top:10px;}
+
+  /* ===== WORKOUT LIST ===== */
+  .wk-item{
+    display:flex;align-items:center;gap:12px;
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:14px 14px 14px 4px;
+    padding:13px 14px;
+    margin-bottom:8px;
+    animation:slideInRight .35s ease both;
+    transition:border-color .15s;
+  }
+  .wk-date{
+    width:46px;flex-shrink:0;text-align:center;
+  }
+  .wk-date .d{font-size:18px;font-weight:800;line-height:1;}
+  .wk-date .m{font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:700;letter-spacing:0.3px;}
+  .wk-mid{flex:1;min-width:0;}
+  .wk-dist{font-size:15px;font-weight:800;}
+  .wk-meta{font-size:12px;color:var(--gray);margin-top:2px;font-weight:500;}
+  .wk-pace{
+    font-family:monospace;font-weight:700;font-size:14px;
+    color:var(--lime);text-align:right;flex-shrink:0;
+  }
+  .wk-pace .lbl{display:block;font-size:9px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:0.3px;}
+  .wk-del{
+    background:none;border:none;color:var(--gray-dim);
+    font-size:18px;padding:4px 2px;cursor:pointer;flex-shrink:0;
+    transition:transform .12s;
+  }
+  .wk-del:active{color:var(--red);transform:scale(0.85);}
+
+  .empty-state{
+    text-align:center;padding:40px 20px;color:var(--gray);
+    animation:fadeSlideUp .4s ease both;
+  }
+  .empty-state .ic{font-size:32px;margin-bottom:10px;opacity:0.5;}
+  .empty-state p{font-size:13px;font-weight:600;}
+
+  /* ===== LEADERBOARD ===== */
+  .lb-item{
+    display:flex;align-items:center;gap:12px;
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:14px 14px 14px 4px;
+    padding:12px 14px;
+    margin-bottom:8px;
+    animation:slideInRight .35s ease both;
+    transition:border-color .15s, transform .15s;
+  }
+  .lb-item.me{border-color:var(--lime);background:#1a1f08;}
+  .lb-item:active{transform:scale(0.98);}
+  .lb-rank{
+    width:28px;flex-shrink:0;text-align:center;
+    font-family:monospace;font-weight:800;font-size:15px;color:var(--gray);
+  }
+  .lb-rank.top1{color:var(--lime);}
+  .lb-rank.top2{color:#e0e0e0;}
+  .lb-rank.top3{color:#cc8b3c;}
+  .lb-name{flex:1;min-width:0;}
+  .lb-name .n{font-size:14px;font-weight:800;}
+  .lb-name .s{font-size:11px;color:var(--gray);font-weight:600;}
+  .lb-km{font-family:monospace;font-weight:800;font-size:16px;text-align:right;flex-shrink:0;}
+  .lb-km .u{font-size:10px;color:var(--gray);font-weight:700;}
+
+  .period-switch{display:flex;gap:6px;margin-bottom:14px;}
+  .pswitch-btn{
+    flex:1;padding:8px;font-size:11px;font-weight:800;text-transform:uppercase;
+    background:var(--bg-card);border:1px solid var(--border);border-radius:10px;
+    color:var(--gray);cursor:pointer;
+  }
+  .pswitch-btn.active{background:var(--white);color:#0a0a0a;border-color:var(--white);}
+
+  /* ===== FORMS ===== */
+  .field{margin-bottom:14px;max-width:100%;}
+  .field label{
+    display:block;font-size:11px;font-weight:800;text-transform:uppercase;
+    letter-spacing:0.3px;color:var(--gray);margin-bottom:7px;
+  }
+  .field input{
+    width:100%;
+    max-width:100%;
+    box-sizing:border-box;
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:13px 14px;
+    color:var(--white);
+    font-size:16px;
+    font-weight:600;
+    font-family:inherit;
+  }
+  .field input[type="date"]{
+    -webkit-appearance:none;
+    appearance:none;
+    color-scheme:dark;
+    min-width:0;
+  }
+  .field input:focus{outline:none;border-color:var(--lime);}
+  .field-row{display:flex;gap:10px;}
+  .field-row .field{flex:1;}
+  .time-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  .btn{
+    width:100%;
+    padding:15px;
+    border-radius:12px;
+    border:none;
+    font-size:14px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:0.4px;
+    cursor:pointer;
+    font-family:inherit;
+    transition:transform .12s;
+  }
+  .btn-primary{background:var(--lime);color:#0a0a0a;}
+  .btn-primary:active{transform:scale(0.97);}
+  .btn-secondary{background:var(--bg-card);color:var(--white);border:1px solid var(--border);}
+  .btn-secondary:active{transform:scale(0.97);}
+  .btn-ghost{background:transparent;color:var(--gray);border:1px solid var(--border);}
+
+  .computed-pace{
+    text-align:center;padding:12px;
+    background:var(--bg-card-2);border-radius:12px;margin-bottom:14px;
+    border:1px solid var(--border);
+  }
+  .computed-pace .v{font-family:monospace;font-size:22px;font-weight:800;color:var(--lime);}
+  .computed-pace .l{font-size:10px;color:var(--gray);text-transform:uppercase;font-weight:700;margin-top:2px;}
+
+  /* ===== MODAL / LOGIN ===== */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,0.75);
+    display:flex;align-items:center;justify-content:center;
+    z-index:100;padding:20px;
+    animation:fadeSlideUp .2s ease both;
+  }
+  #loginOverlay{
+    background-image:linear-gradient(180deg, rgba(8,8,8,0.05) 0%, rgba(8,8,8,0.1) 60%, rgba(8,8,8,0.5) 100%), url('hero-runner.jpg');
+    background-size:cover;
+    background-position:center center;
+    background-repeat:no-repeat;
+    background-color:#0a0a0a;
+  }
+  .modal-box{
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:18px 18px 18px 4px;
+    padding:26px 22px;
+    max-width:340px;width:100%;
+    box-sizing:border-box;
+    overflow:hidden;
+    animation:fadeSlideUp .3s cubic-bezier(.2,.9,.2,1) both;
+  }
+  #loginOverlay .modal-box{
+    background:rgba(14,14,14,0.82);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+  }
+  .modal-box h2{font-size:20px;font-weight:900;text-transform:uppercase;margin-bottom:6px;font-style:italic;}
+  .modal-box .sub{font-size:13px;color:var(--gray);margin-bottom:18px;font-weight:500;line-height:1.4;}
+
+  /* ===== FAB ===== */
+  .fab{
+    position:fixed;
+    bottom:24px;left:16px;right:16px;
+    max-width:416px;
+    margin:0 auto;
+    z-index:50;
+    animation:fadeSlideUp .4s ease .2s both;
+  }
+  .fab button{
+    width:100%;padding:17px;
+    background:var(--lime);color:#0a0a0a;
+    border:none;border-radius:100px;
+    font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.5px;
+    cursor:pointer;
+    box-shadow:0 4px 20px rgba(204,255,0,0.25);
+    transition:transform .12s, box-shadow .2s;
+    animation:pulseGlow 2.6s infinite;
+  }
+  .fab button:active{transform:scale(0.96);}
+
+  .toast{
+    position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-20px);
+    background:var(--lime);color:#0a0a0a;
+    padding:10px 18px;border-radius:100px;
+    font-size:13px;font-weight:800;
+    z-index:200;opacity:0;
+    transition:all .25s;
+    white-space:nowrap;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .motivation-toast{
+    position:fixed;
+    bottom:100px;right:16px;
+    max-width:280px;
+    background:var(--bg-card);
+    border:1px solid var(--lime);
+    border-radius:14px 14px 4px 14px;
+    padding:14px 16px 12px;
+    z-index:200;
+    opacity:0;
+    transform:translateY(16px) scale(0.95);
+    transition:opacity .3s, transform .3s;
+    box-shadow:0 8px 30px rgba(0,0,0,0.4);
+  }
+  .motivation-toast.show{opacity:1;transform:translateY(0) scale(1);}
+  .motivation-toast .mt-text{font-size:14px;font-weight:700;line-height:1.35;color:var(--white);}
+  .motivation-toast .mt-author{
+    display:block;margin-top:8px;text-align:right;
+    font-size:11px;font-weight:700;color:var(--lime);
+    font-family:monospace;
+  }
+
+  .hidden{display:none !important;}
+  ::-webkit-scrollbar{display:none;}#appBody{max-width:480px;margin:0 auto;}
+</style>
+</head>
+<body>
+
+<div id="loginOverlay" class="modal-overlay">
+  <div class="modal-box">
+    <h2>Бегу к себе</h2>
+
+    <div class="period-switch" style="margin-bottom:18px;">
+      <div class="pswitch-btn active" id="modeRegisterBtn" data-p="register" onclick="switchLoginMode('register')">Я первый раз</div>
+      <div class="pswitch-btn" id="modeLoginBtn" data-p="login" onclick="switchLoginMode('login')">У меня есть код</div>
+    </div>
+
+    <div id="registerBlock">
+      <p class="sub">Придумай имя (для отображения) и пароль. После регистрации мы дадим тебе личный код входа — без него попасть в кабинет повторно не получится, поэтому сохрани его.</p>
+      <div class="field">
+        <label>Имя</label>
+        <input type="text" id="regNameInput" placeholder="например, Никита" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Придумай пароль</label>
+        <input type="password" id="regPasswordInput" placeholder="любой пароль" autocomplete="off">
+      </div>
+      <div id="registerError" style="display:none;color:#ff4d4d;font-size:12px;font-weight:600;margin-bottom:12px;"></div>
+      <button class="btn btn-primary" onclick="doRegister()">Зарегистрироваться</button>
+    </div>
+
+    <div id="loginBlock" class="hidden">
+      <p class="sub">Введи свой код входа и пароль.</p>
+      <div class="field">
+        <label>Код входа</label>
+        <input type="text" id="loginCodeInput" placeholder="например, x7k2" autocomplete="off" style="font-family:monospace;text-transform:lowercase;">
+      </div>
+      <div class="field">
+        <label>Пароль</label>
+        <input type="password" id="loginPassword" placeholder="твой пароль" autocomplete="off">
+      </div>
+      <div id="loginError" style="display:none;color:#ff4d4d;font-size:12px;font-weight:600;margin-bottom:12px;"></div>
+      <button class="btn btn-primary" onclick="doLogin()">Войти</button>
+    </div>
+
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="codeRevealOverlay">
+  <div class="modal-box">
+    <h2 style="color:var(--lime);">Готово!</h2>
+    <p class="sub">Это твой личный код входа. Он понадобится каждый раз, когда заходишь в кабинет — сохрани его (сделай скриншот или запиши).</p>
+    <div style="text-align:center;background:var(--bg-card-2);border:1px solid var(--lime);border-radius:14px;padding:22px;margin-bottom:18px;">
+      <div style="font-family:monospace;font-size:32px;font-weight:800;color:var(--lime);letter-spacing:2px;" id="revealedCode">x7k2</div>
+    </div>
+    <button class="btn btn-primary" onclick="confirmCodeSaved()">Я сохранил код, продолжить</button>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="newMonthOverlay">
+  <div class="modal-box" style="text-align:center;max-width:320px;">
+    <div style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--lime);margin-bottom:10px;" id="newMonthLabel">Новый месяц</div>
+    <h2 style="font-size:22px;margin-bottom:14px;" id="newMonthTitle">Новый месяц начался</h2>
+    <p class="sub" id="newMonthPhrase" style="font-size:15px;line-height:1.5;">Фраза появится здесь</p>
+    <button class="btn btn-primary" onclick="closeNewMonthOverlay()">Погнали</button>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="goalWinOverlay">
+  <div class="modal-box" style="text-align:center;max-width:320px;">
+    <div style="font-size:48px;margin-bottom:8px;" id="goalWinEmoji">🏆</div>
+    <h2 style="font-size:22px;margin-bottom:10px;color:var(--lime);">Цель достигнута!</h2>
+    <p class="sub" id="goalWinText" style="font-size:14px;">Ты сделал это.</p>
+    <button class="btn btn-primary" onclick="openGoalModalFromWin()" style="margin-bottom:10px;">Поставить новую цель</button>
+    <button class="btn btn-ghost" onclick="closeGoalWinOverlay()">Позже</button>
+  </div>
+</div>
+
+<div class="header hidden" id="mainHeader">
+  <div class="header-row">
+    <div class="brand">БЕГУ К СЕБЕ <span class="lock">●</span></div>
+    <div class="user-pill" onclick="logout()">
+      <div class="user-avatar" id="avatarLetter">N</div>
+      <span id="userNameLabel">—</span>
+    </div>
+  </div>
+</div>
+
+<div class="hidden" id="appBody">
+
+  <div class="title-block">
+    <h1>Твоя <span class="accent">прогрессия</span></h1>
+    <p>Каждый километр — это шаг к себе</p>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-screen="dashboard" onclick="switchTab('dashboard')">Главная</div>
+    <div class="tab" data-screen="history" onclick="switchTab('history')">История</div>
+    <div class="tab" data-screen="board" onclick="switchTab('board')">Доска</div>
+    <div class="tab" data-screen="goal" onclick="switchTab('goal')">Цель</div>
+    <div class="tab" data-screen="achievements" onclick="switchTab('achievements')">Достижения</div>
+    <div class="tab" data-screen="archive" onclick="switchTab('archive')">Архив</div>
+  </div>
+
+  <!-- ================= DASHBOARD ================= -->
+  <div class="screen active" id="screen-dashboard">
+
+    <div class="stat-grid three" style="margin-top:16px;">
+      <div class="stat-card">
+        <div class="stat-label">Всего км</div>
+        <div class="stat-value lime" id="statTotalKm" style="font-size:20px;">0<span class="unit">км</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Тренировок</div>
+        <div class="stat-value" id="statCount" style="font-size:20px;">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Пульс ср.</div>
+        <div class="stat-value" id="statHr" style="font-size:20px;">—</div>
+      </div>
+    </div>
+    <div class="stat-grid three">
+      <div class="stat-card">
+        <div class="stat-label">Темп ср.</div>
+        <div class="stat-value" id="statPace" style="font-size:18px;">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">За неделю</div>
+        <div class="stat-value" id="statWeek" style="font-size:18px;">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Лучший км</div>
+        <div class="stat-value" id="statBest" style="font-size:18px;">0</div>
+      </div>
+    </div>
+
+    <div id="goalPreviewWrap"></div>
+
+    <div class="sec-head">
+      <h2>Прогрессия дистанции</h2>
+    </div>
+    <div class="chart-card">
+      <div class="chart-wrap"><canvas id="distChart"></canvas></div>
+    </div>
+
+    <div class="sec-head">
+      <h2>Темп по тренировкам</h2>
+    </div>
+    <div class="chart-card">
+      <div class="chart-wrap"><canvas id="paceChart"></canvas></div>
+    </div>
+
+  </div>
+
+  <!-- ================= HISTORY ================= -->
+  <div class="screen" id="screen-history">
+    <div class="sec-head" style="margin-top:16px;">
+      <h2>Все тренировки</h2>
+      <span id="histCount"></span>
+    </div>
+    <div id="historyList"></div>
+  </div>
+
+  <!-- ================= BOARD ================= -->
+  <div class="screen" id="screen-board">
+    <div class="period-switch" style="margin-top:16px;">
+      <div class="pswitch-btn active" data-p="week" onclick="switchBoardPeriod('week')">Неделя</div>
+      <div class="pswitch-btn" data-p="month" onclick="switchBoardPeriod('month')">Месяц</div>
+      <div class="pswitch-btn" data-p="all" onclick="switchBoardPeriod('all')">Все время</div>
+    </div>
+    <div id="boardList"></div>
+  </div>
+
+  <!-- ================= GOAL ================= -->
+  <div class="screen" id="screen-goal">
+    <div style="margin-top:16px;" id="goalScreenContent"></div>
+  </div>
+
+  <!-- ================= ACHIEVEMENTS ================= -->
+  <div class="screen" id="screen-achievements">
+    <div class="sec-head" style="margin-top:16px;">
+      <h2>Твои забеги</h2>
+      <span id="achCount"></span>
+    </div>
+    <div id="achievementsList"></div>
+    <button class="btn btn-secondary" onclick="openAchModal()" style="margin-top:4px;">+ Добавить забег</button>
+  </div>
+
+  <!-- ================= MONTHLY ARCHIVE ================= -->
+  <div class="screen" id="screen-archive">
+    <div class="sec-head" style="margin-top:16px;">
+      <h2>Факт о тебе</h2>
+    </div>
+    <div id="allTimeFactCard"></div>
+
+    <div class="sec-head">
+      <h2>По месяцам</h2>
+    </div>
+    <div id="archiveList"></div>
+  </div>
+
+</div>
+
+<div class="fab hidden" id="addFab">
+  <button onclick="openAddModal()">+ Добавить тренировку</button>
+</div>
+
+<div class="modal-overlay hidden" id="addOverlay">
+  <div class="modal-box" style="max-width:380px;">
+    <h2 style="font-size:18px;">Новая тренировка</h2>
+    <p class="sub">Внеси дистанцию и время — темп посчитаем сами.</p>
+
+    <div class="field">
+      <label>Дата</label>
+      <input type="date" id="inpDate">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Дистанция (км)</label>
+        <input type="number" step="0.01" min="0" id="inpDist" placeholder="5.0" oninput="updateComputedPace()">
+      </div>
+    </div>
+    <div class="field">
+      <label>Время</label>
+      <div class="time-row">
+        <input type="number" min="0" id="inpMin" placeholder="мин" oninput="updateComputedPace()">
+        <input type="number" min="0" max="59" id="inpSec" placeholder="сек" oninput="updateComputedPace()">
+      </div>
+    </div>
+    <div class="field">
+      <label>Средний пульс <span style="color:var(--gray-dim);text-transform:none;font-weight:600;">(необязательно)</span></label>
+      <input type="number" min="0" max="240" id="inpHr" placeholder="например, 152">
+    </div>
+
+    <div class="computed-pace">
+      <div class="v" id="computedPaceVal">—</div>
+      <div class="l">мин/км</div>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveWorkout()" style="margin-bottom:10px;">Сохранить</button>
+    <button class="btn btn-ghost" onclick="closeAddModal()">Отмена</button>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="goalOverlay">
+  <div class="modal-box" style="max-width:380px;">
+    <h2 style="font-size:18px;">Поставить цель</h2>
+    <p class="sub">Выбери, к чему стремишься в этом цикле.</p>
+    <div class="field">
+      <label>Тип цели</label>
+      <input type="text" id="goalTypeDisplay" value="Дистанция (км) за период" readonly style="opacity:0.6;">
+    </div>
+    <div class="field">
+      <label>Целевая дистанция, км</label>
+      <input type="number" step="0.1" min="0" id="goalDistInput" placeholder="например, 50">
+    </div>
+    <div class="field">
+      <label>До какой даты</label>
+      <input type="date" id="goalDateInput">
+    </div>
+    <button class="btn btn-primary" onclick="saveGoal()" style="margin-bottom:10px;">Сохранить цель</button>
+    <button class="btn btn-ghost" onclick="closeGoalModal()">Отмена</button>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="achOverlay">
+  <div class="modal-box" style="max-width:380px;">
+    <h2 style="font-size:18px;">Новый забег</h2>
+    <p class="sub">Отметь соревнование, в котором участвовал.</p>
+    <div class="field">
+      <label>Название забега</label>
+      <input type="text" id="achNameInput" placeholder="например, Воронежский полумарафон">
+    </div>
+    <div class="field">
+      <label>Дата</label>
+      <input type="date" id="achDateInput">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Дистанция, км</label>
+        <input type="number" step="0.1" min="0" id="achDistInput" placeholder="21.1">
+      </div>
+      <div class="field">
+        <label>Результат (время)</label>
+        <input type="text" id="achTimeInput" placeholder="1:45:30">
+      </div>
+    </div>
+    <div class="field">
+      <label>Место/заметка <span style="color:var(--gray-dim);text-transform:none;font-weight:600;">(необязательно)</span></label>
+      <input type="text" id="achNoteInput" placeholder="например, 23 место в категории">
+    </div>
+    <button class="btn btn-primary" onclick="saveAchievement()" style="margin-bottom:10px;">Сохранить</button>
+    <button class="btn btn-ghost" onclick="closeAchModal()">Отмена</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="motivation-toast" id="motivationToast">
+  <div class="mt-text" id="motivationText"></div>
+  <span class="mt-author">@natash_natashh</span>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+/* ====== FIREBASE CONFIG ======
+   Замени значения ниже на свои из консоли Firebase
+   (Project settings -> General -> Your apps -> SDK setup and configuration) */
+const firebaseConfig = {
+  apiKey: "AIzaSyBfoZFaBD07qnj6JqMyOnFvmH29kTeRJUE",
+  authDomain: "run-track-1660c.firebaseapp.com",
+  databaseURL: "https://run-track-1660c-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "run-track-1660c",
+  storageBucket: "run-track-1660c.firebasestorage.app",
+  messagingSenderId: "196895339070",
+  appId: "1:196895339070:web:2b8ecc0e04ae30e19dd76f",
+  measurementId: "G-HDND9SR7RB"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getDatabase(fbApp);
+
+/* ============== STATE ============== */
+let currentUser = null;
+let workouts = [];
+let goal = null;
+let distChartInstance = null;
+let paceChartInstance = null;
+let currentBoardPeriod = 'week';
+let newMonthStarted = false;
+let monthlyArchive = {};
+let achievements = [];
+
+const MONTHS_RU = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+const MONTHS_RU_FULL = ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+
+/* ============== PASSWORD HASHING ============== */
+async function hashPassword(password){
+  const enc = new TextEncoder().encode(password);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+/* ============== STORAGE HELPERS (Firebase) ============== */
+async function loadUserData(key){
+  try{
+    const snap = await get(ref(db, 'workouts/'+key));
+    return snap.exists() ? Object.values(snap.val()) : [];
+  }catch(e){ console.error('load failed', e); return []; }
+}
+async function saveUserData(key, data){
+  try{
+    const obj = {};
+    data.forEach(w=>{ obj[w.id] = w; });
+    await set(ref(db, 'workouts/'+key), obj);
+  }catch(e){ console.error('save failed', e); showToast('Ошибка сохранения, проверь интернет'); }
+}
+async function loadGoal(key){
+  try{
+    const snap = await get(ref(db, 'goals/'+key));
+    return snap.exists() ? snap.val() : null;
+  }catch(e){ return null; }
+}
+async function saveGoalData(key, data){
+  try{
+    if(data===null){
+      await remove(ref(db, 'goals/'+key));
+    }else{
+      await set(ref(db, 'goals/'+key), data);
+    }
+  }catch(e){ console.error('save goal failed', e); }
+}
+async function saveLeaderboardEntry(key, totalKm, displayName){
+  try{
+    await set(ref(db, 'leaderboard/'+key), {key:key, name:displayName, totalKm:totalKm, updated:Date.now()});
+  }catch(e){ console.error('lb save failed', e); }
+}
+async function loadAllLeaderboard(){
+  try{
+    const snap = await get(ref(db, 'leaderboard'));
+    if(!snap.exists()) return [];
+    return Object.values(snap.val());
+  }catch(e){ return []; }
+}
+async function getUserAuth(key){
+  try{
+    const snap = await get(ref(db, 'auth/'+key));
+    return snap.exists() ? snap.val() : null;
+  }catch(e){ return null; }
+}
+async function setUserAuth(key, passwordHash, displayName){
+  try{
+    await set(ref(db, 'auth/'+key), {passwordHash:passwordHash, displayName:displayName});
+  }catch(e){ console.error('auth save failed', e); }
+}
+
+/* ============== MONTHLY ARCHIVE STORAGE ============== */
+async function loadCurrentPeriod(key){
+  try{
+    const snap = await get(ref(db, 'currentPeriod/'+key));
+    return snap.exists() ? snap.val() : null;
+  }catch(e){ return null; }
+}
+async function saveCurrentPeriod(key, monthKey){
+  try{
+    await set(ref(db, 'currentPeriod/'+key), {monthKey:monthKey});
+  }catch(e){ console.error('period save failed', e); }
+}
+async function saveMonthArchive(key, monthKey, summary){
+  try{
+    await set(ref(db, 'monthlyArchive/'+key+'/'+monthKey), summary);
+  }catch(e){ console.error('archive save failed', e); }
+}
+async function loadMonthlyArchive(key){
+  try{
+    const snap = await get(ref(db, 'monthlyArchive/'+key));
+    return snap.exists() ? snap.val() : {};
+  }catch(e){ return {}; }
+}
+
+/* ============== ACHIEVEMENTS STORAGE ============== */
+async function loadAchievements(key){
+  try{
+    const snap = await get(ref(db, 'achievements/'+key));
+    return snap.exists() ? Object.values(snap.val()) : [];
+  }catch(e){ return []; }
+}
+async function saveAchievements(key, data){
+  try{
+    const obj = {};
+    data.forEach(a=>{ obj[a.id] = a; });
+    await set(ref(db, 'achievements/'+key), obj);
+  }catch(e){ console.error('achievements save failed', e); }
+}
+
+/* ============== LOGIN ============== */
+function normalizeKey(code){
+  return code.trim().toLowerCase().replace(/\s+/g,'');
+}
+
+function generateCode(){
+  const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
+  let code = '';
+  for(let i=0;i<4;i++){
+    code += chars.charAt(Math.floor(Math.random()*chars.length));
+  }
+  return code;
+}
+
+function switchLoginMode(mode){
+  document.getElementById('modeRegisterBtn').classList.toggle('active', mode==='register');
+  document.getElementById('modeLoginBtn').classList.toggle('active', mode==='login');
+  document.getElementById('registerBlock').classList.toggle('hidden', mode!=='register');
+  document.getElementById('loginBlock').classList.toggle('hidden', mode!=='login');
+  document.getElementById('registerError').style.display = 'none';
+  document.getElementById('loginError').style.display = 'none';
+}
+
+async function doRegister(){
+  const name = document.getElementById('regNameInput').value.trim();
+  const pass = document.getElementById('regPasswordInput').value;
+
+  if(!name){ showRegisterError('Введи своё имя'); return; }
+  if(!pass){ showRegisterError('Придумай пароль'); return; }
+
+  let code, existing;
+  let attempts = 0;
+  do{
+    code = generateCode();
+    existing = await getUserAuth(code);
+    attempts++;
+  }while(existing && attempts < 10);
+
+  if(existing){
+    showRegisterError('Не получилось создать код, попробуй ещё раз');
+    return;
+  }
+
+  const hash = await hashPassword(pass);
+  await setUserAuth(code, hash, name);
+
+  currentUser = {key:code, displayName:name};
+  localStorage.setItem('rk_session', JSON.stringify({key:code, displayName:name}));
+  document.getElementById('regPasswordInput').value = '';
+
+  document.getElementById('revealedCode').textContent = code;
+  document.getElementById('codeRevealOverlay').classList.remove('hidden');
+}
+
+async function confirmCodeSaved(){
+  document.getElementById('codeRevealOverlay').classList.add('hidden');
+  document.getElementById('loginOverlay').classList.add('hidden');
+  await initApp();
+}
+
+async function doLogin(){
+  const codeRaw = document.getElementById('loginCodeInput').value.trim();
+  const pass = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+
+  if(!codeRaw){ showLoginError('Введи код входа'); return; }
+  if(!pass){ showLoginError('Введи пароль'); return; }
+
+  const key = normalizeKey(codeRaw);
+  const hash = await hashPassword(pass);
+  const existingAuth = await getUserAuth(key);
+
+  if(!existingAuth){
+    showLoginError('Такой код не найден — проверь, верно ли ввёл');
+    return;
+  }
+  if(existingAuth.passwordHash !== hash){
+    showLoginError('Неверный пароль для этого кода');
+    return;
+  }
+
+  currentUser = {key:key, displayName: existingAuth.displayName};
+  localStorage.setItem('rk_session', JSON.stringify({key:key, displayName:existingAuth.displayName}));
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginOverlay').classList.add('hidden');
+  await initApp();
+}
+
+function showLoginError(msg){
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = msg;
+  errEl.style.display = 'block';
+}
+function showRegisterError(msg){
+  const errEl = document.getElementById('registerError');
+  errEl.textContent = msg;
+  errEl.style.display = 'block';
+}
+
+function logout(){
+  if(!confirm('Выйти из кабинета? Понадобится код и пароль для следующего входа.')) return;
+  localStorage.removeItem('rk_session');
+  currentUser = null;
+  document.getElementById('mainHeader').classList.add('hidden');
+  document.getElementById('appBody').classList.add('hidden');
+  document.getElementById('addFab').classList.add('hidden');
+  document.getElementById('loginOverlay').classList.remove('hidden');
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginCodeInput').value = '';
+  switchLoginMode('login');
+}
+
+async function tryAutoLogin(){
+  const saved = localStorage.getItem('rk_session');
+  if(!saved) return false;
+  try{
+    const session = JSON.parse(saved);
+    if(!session || !session.key) return false;
+
+    const existingAuth = await getUserAuth(session.key);
+    if(!existingAuth){
+      localStorage.removeItem('rk_session');
+      return false;
+    }
+
+    currentUser = {key:session.key, displayName:existingAuth.displayName};
+    await initApp();
+    return true;
+  }catch(e){
+    localStorage.removeItem('rk_session');
+    return false;
+  }
+}
+
+/* ============== MONTHLY ARCHIVE LOGIC ============== */
+function getMonthKey(date){
+  const d = new Date(date);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+
+function computeMonthSummary(workoutsForMonth){
+  const dist = workoutsForMonth.reduce((s,w)=>s+w.dist,0);
+  const count = workoutsForMonth.length;
+  const totalSec = workoutsForMonth.reduce((s,w)=>s+w.timeSec,0);
+  const avgPaceSec = dist>0 ? totalSec/dist : 0;
+  const withHr = workoutsForMonth.filter(w=>w.avgHr);
+  const avgHr = withHr.length ? Math.round(withHr.reduce((s,w)=>s+w.avgHr,0)/withHr.length) : null;
+  const bestDist = count ? Math.max(...workoutsForMonth.map(w=>w.dist)) : 0;
+  return {
+    dist: Math.round(dist*100)/100,
+    count: count,
+    avgPaceSec: Math.round(avgPaceSec),
+    avgHr: avgHr,
+    bestDist: Math.round(bestDist*100)/100,
+    movingTimeSec: totalSec
+  };
+}
+
+async function checkAndArchiveMonth(){
+  const nowMonthKey = getMonthKey(new Date());
+  const period = await loadCurrentPeriod(currentUser.key);
+
+  if(!period){
+    await saveCurrentPeriod(currentUser.key, nowMonthKey);
+    return;
+  }
+  if(period.monthKey === nowMonthKey) return;
+
+  const closedMonthWorkouts = workouts.filter(w=> getMonthKey(w.date) === period.monthKey);
+  if(closedMonthWorkouts.length > 0){
+    const summary = computeMonthSummary(closedMonthWorkouts);
+    await saveMonthArchive(currentUser.key, period.monthKey, summary);
+  }
+  await saveCurrentPeriod(currentUser.key, nowMonthKey);
+  newMonthStarted = true;
+}
+
+async function initApp(){
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('mainHeader').classList.remove('hidden');
+  document.getElementById('appBody').classList.remove('hidden');
+  document.getElementById('addFab').classList.remove('hidden');
+
+  document.getElementById('userNameLabel').textContent = currentUser.displayName;
+  document.getElementById('avatarLetter').textContent = currentUser.displayName.charAt(0).toUpperCase();
+
+  workouts = await loadUserData(currentUser.key);
+  goal = await loadGoal(currentUser.key);
+  achievements = await loadAchievements(currentUser.key);
+  monthlyArchive = await loadMonthlyArchive(currentUser.key);
+
+  await checkAndArchiveMonth();
+  if(newMonthStarted){
+    monthlyArchive = await loadMonthlyArchive(currentUser.key);
+    showNewMonthOverlay();
+  }
+
+  renderDashboard();
+  renderHistory();
+  renderGoalScreen();
+
+  const totalKm = workouts.reduce((s,w)=>s+w.dist,0);
+  saveLeaderboardEntry(currentUser.key, totalKm, currentUser.displayName);
+}
+
+/* ============== TABS ============== */
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.screen===name));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', s.id==='screen-'+name));
+  if(name==='board') renderBoard();
+  if(name==='achievements') renderAchievements();
+  if(name==='archive'){ renderAllTimeFactCard(); renderArchiveList(); }
+}
+
+/* ============== TIME HELPERS ============== */
+function formatPace(secPerKm){
+  if(!isFinite(secPerKm) || secPerKm<=0) return '—';
+  const m = Math.floor(secPerKm/60);
+  const s = Math.round(secPerKm%60);
+  return m+':'+String(s).padStart(2,'0');
+}
+function formatDuration(totalSec){
+  const m = Math.floor(totalSec/60);
+  const s = Math.round(totalSec%60);
+  return m+' мин '+s+' сек';
+}
+function formatDateShort(dateStr){
+  const d = new Date(dateStr+'T00:00:00');
+  return {d: d.getDate(), m: MONTHS_RU[d.getMonth()]};
+}
+
+/* ============== ADD WORKOUT ============== */
+function openAddModal(){
+  document.getElementById('inpDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('inpDist').value = '';
+  document.getElementById('inpMin').value = '';
+  document.getElementById('inpSec').value = '';
+  document.getElementById('inpHr').value = '';
+  document.getElementById('computedPaceVal').textContent = '—';
+  document.getElementById('addOverlay').classList.remove('hidden');
+}
+function closeAddModal(){
+  document.getElementById('addOverlay').classList.add('hidden');
+}
+function updateComputedPace(){
+  const dist = parseFloat(document.getElementById('inpDist').value);
+  const min = parseFloat(document.getElementById('inpMin').value) || 0;
+  const sec = parseFloat(document.getElementById('inpSec').value) || 0;
+  const totalSec = min*60+sec;
+  if(dist>0 && totalSec>0){
+    document.getElementById('computedPaceVal').textContent = formatPace(totalSec/dist);
+  }else{
+    document.getElementById('computedPaceVal').textContent = '—';
+  }
+}
+
+async function saveWorkout(){
+  const date = document.getElementById('inpDate').value;
+  const dist = parseFloat(document.getElementById('inpDist').value);
+  const min = parseFloat(document.getElementById('inpMin').value) || 0;
+  const sec = parseFloat(document.getElementById('inpSec').value) || 0;
+  const totalSec = min*60+sec;
+  const hrRaw = document.getElementById('inpHr').value;
+  const avgHr = hrRaw ? parseInt(hrRaw) : null;
+
+  if(!date){ showToast('Укажи дату'); return; }
+  if(!dist || dist<=0){ showToast('Укажи дистанцию'); return; }
+  if(!totalSec || totalSec<=0){ showToast('Укажи время'); return; }
+  if(avgHr!==null && (avgHr<30 || avgHr>240)){ showToast('Проверь пульс — похоже на ошибку'); return; }
+
+  workouts.push({
+    id: Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    date: date,
+    dist: dist,
+    timeSec: totalSec,
+    avgHr: avgHr
+  });
+  workouts.sort((a,b)=> new Date(a.date) - new Date(b.date));
+
+  await saveUserData(currentUser.key, workouts);
+  const totalKm = workouts.reduce((s,w)=>s+w.dist,0);
+  await saveLeaderboardEntry(currentUser.key, totalKm, currentUser.displayName);
+
+  closeAddModal();
+
+  const goalJustAchieved = await checkGoalAchievement();
+  if(!goalJustAchieved) showMotivationToast();
+
+  renderDashboard();
+  renderHistory();
+  renderGoalScreen();
+}
+
+async function deleteWorkout(id){
+  if(!confirm('Удалить тренировку?')) return;
+  workouts = workouts.filter(w=>w.id!==id);
+  await saveUserData(currentUser.key, workouts);
+  const totalKm = workouts.reduce((s,w)=>s+w.dist,0);
+  await saveLeaderboardEntry(currentUser.key, totalKm, currentUser.displayName);
+  renderDashboard();
+  renderHistory();
+  renderGoalScreen();
+}
+
+/* ============== DASHBOARD RENDER ============== */
+/* ============== COUNT-UP ANIMATION ============== */
+function countUpNumber(el, target, decimals, suffixHtml){
+  const duration = 700;
+  const start = performance.now();
+  const startVal = 0;
+  function tick(now){
+    const progress = Math.min(1, (now-start)/duration);
+    const eased = 1 - Math.pow(1-progress, 3);
+    const val = startVal + (target-startVal)*eased;
+    el.innerHTML = val.toFixed(decimals) + (suffixHtml||'');
+    if(progress < 1){
+      requestAnimationFrame(tick);
+    }else{
+      el.innerHTML = target.toFixed(decimals) + (suffixHtml||'');
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+function getWeekStart(date){
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = (day===0 ? -6 : 1) - day;
+  d.setDate(d.getDate()+diff);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function renderDashboard(){
+  const now = new Date();
+  const nowMonthKey = getMonthKey(now);
+  const monthWorkouts = workouts.filter(w=> getMonthKey(w.date) === nowMonthKey);
+
+  const totalKm = monthWorkouts.reduce((s,w)=>s+w.dist,0);
+  const totalSec = monthWorkouts.reduce((s,w)=>s+w.timeSec,0);
+  const avgPaceSec = totalKm>0 ? totalSec/totalKm : 0;
+
+  countUpNumber(document.getElementById('statTotalKm'), totalKm, 1, '<span class="unit">км</span>');
+  countUpNumber(document.getElementById('statCount'), monthWorkouts.length, 0, '');
+  document.getElementById('statPace').textContent = avgPaceSec>0 ? formatPace(avgPaceSec)+' /км' : '—';
+
+  const withHr = monthWorkouts.filter(w=>w.avgHr);
+  const statHrEl = document.getElementById('statHr');
+  if(withHr.length){
+    const avgHr = withHr.reduce((s,w)=>s+w.avgHr,0)/withHr.length;
+    countUpNumber(statHrEl, avgHr, 0, '<span class="unit" style="font-size:11px;"> уд/мин</span>');
+  }else{
+    statHrEl.textContent = '—';
+  }
+
+  const weekStart = getWeekStart(now);
+  const weekKm = workouts.filter(w=>new Date(w.date)>=weekStart).reduce((s,w)=>s+w.dist,0);
+  countUpNumber(document.getElementById('statWeek'), weekKm, 1, '<span class="unit" style="font-size:11px;"> км</span>');
+
+  const bestDist = monthWorkouts.length ? Math.max(...monthWorkouts.map(w=>w.dist)) : 0;
+  countUpNumber(document.getElementById('statBest'), bestDist, 1, '<span class="unit" style="font-size:11px;"> км</span>');
+
+  renderGoalPreview();
+  renderCharts(monthWorkouts);
+}
+
+function renderGoalPreview(){
+  const wrap = document.getElementById('goalPreviewWrap');
+  if(!goal){
+    wrap.innerHTML = '';
+    return;
+  }
+  const progressKm = workouts.filter(w=>new Date(w.date)>=new Date(goal.startDate)).reduce((s,w)=>s+w.dist,0);
+  const pct = Math.min(100, Math.round((progressKm/goal.targetKm)*100));
+  wrap.innerHTML = `
+    <div class="goal-card">
+      <div class="goal-top">
+        <span class="goal-name">Цель: ${goal.targetKm} км</span>
+        <span class="goal-pct">${pct}%</span>
+      </div>
+      <div class="goal-bar-track"><div class="goal-bar-fill" style="width:${pct}%;"></div></div>
+      <div class="goal-sub">
+        <span>${progressKm.toFixed(1)} из ${goal.targetKm} км</span>
+        <span>до ${formatDateRu(goal.deadline)}</span>
+      </div>
+    </div>
+  `;
+}
+
+function formatDateRu(dateStr){
+  const d = new Date(dateStr+'T00:00:00');
+  return d.getDate()+' '+MONTHS_RU[d.getMonth()];
+}
+
+function renderCharts(chartWorkouts){
+  const ctx1 = document.getElementById('distChart');
+  const ctx2 = document.getElementById('paceChart');
+
+  /* Группируем тренировки по календарному дню: несколько тренировок
+     в один день дают одну точку на графике с суммарной дистанцией
+     и совокупным темпом за день, а не несколько точек подряд. */
+  const byDate = {};
+  chartWorkouts.forEach(w=>{
+    if(!byDate[w.date]) byDate[w.date] = {date:w.date, dist:0, timeSec:0};
+    byDate[w.date].dist += w.dist;
+    byDate[w.date].timeSec += w.timeSec;
+  });
+  const dailyWorkouts = Object.values(byDate).sort((a,b)=> new Date(a.date) - new Date(b.date));
+
+  const labels = dailyWorkouts.map(w=>{
+    const d = formatDateShort(w.date);
+    return d.d+' '+d.m;
+  });
+  const cumKm = [];
+  let running = 0;
+  dailyWorkouts.forEach(w=>{ running += w.dist; cumKm.push(Math.round(running*10)/10); });
+  const paces = dailyWorkouts.map(w=> Math.round((w.timeSec/w.dist)/60*100)/100 );
+
+  if(distChartInstance) distChartInstance.destroy();
+  if(paceChartInstance) paceChartInstance.destroy();
+
+  if(chartWorkouts.length===0){
+    ctx1.parentElement.innerHTML = '<div class="empty-state" style="padding:30px 10px;"><div class="ic">○</div><p>Пока нет данных в этом месяце — добавь первую тренировку</p></div>';
+    ctx2.parentElement.innerHTML = '<div class="empty-state" style="padding:30px 10px;"><div class="ic">○</div><p>График появится после первой тренировки</p></div>';
+    return;
+  }
+
+  distChartInstance = new Chart(ctx1, {
+    type:'line',
+    data:{
+      labels: labels,
+      datasets:[{
+        label:'Суммарная дистанция',
+        data: cumKm,
+        borderColor:'#ccff00',
+        backgroundColor:'rgba(204,255,0,0.08)',
+        fill:true,
+        tension:0.25,
+        pointRadius:3,
+        pointBackgroundColor:'#ccff00',
+        borderWidth:2
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{color:'#8a8a8a',font:{size:10}}, grid:{color:'#222'}},
+        y:{ticks:{color:'#8a8a8a',font:{size:10}}, grid:{color:'#222'}}
+      }
+    }
+  });
+
+  paceChartInstance = new Chart(ctx2, {
+    type:'bar',
+    data:{
+      labels: labels,
+      datasets:[{
+        label:'Темп, мин/км',
+        data: paces,
+        backgroundColor:'#ccff00',
+        borderRadius:4,
+        maxBarThickness:28
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{color:'#8a8a8a',font:{size:10}}, grid:{display:false}},
+        y:{ticks:{color:'#8a8a8a',font:{size:10}}, grid:{color:'#222'}, reverse:false}
+      }
+    }
+  });
+}
+
+/* ============== HISTORY ============== */
+function renderHistory(){
+  const list = document.getElementById('historyList');
+  document.getElementById('histCount').textContent = workouts.length+' трен.';
+
+  if(workouts.length===0){
+    list.innerHTML = '<div class="empty-state"><div class="ic">○</div><p>Тренировок пока нет.<br>Нажми «Добавить тренировку» внизу.</p></div>';
+    return;
+  }
+
+  const sorted = [...workouts].sort((a,b)=> new Date(b.date) - new Date(a.date));
+  list.innerHTML = sorted.map((w,idx)=>{
+    const dt = formatDateShort(w.date);
+    const paceSec = w.timeSec/w.dist;
+    const delay = Math.min(idx*0.04, 0.4);
+    const hrPart = w.avgHr ? ` · ${w.avgHr} уд/мин` : '';
+    return `
+      <div class="wk-item" style="animation-delay:${delay}s;">
+        <div class="wk-date"><div class="d">${dt.d}</div><div class="m">${dt.m}</div></div>
+        <div class="wk-mid">
+          <div class="wk-dist">${w.dist.toFixed(2)} км</div>
+          <div class="wk-meta">${formatDuration(w.timeSec)}${hrPart}</div>
+        </div>
+        <div class="wk-pace">${formatPace(paceSec)}<span class="lbl">мин/км</span></div>
+        <button class="wk-del" onclick="deleteWorkout('${w.id}')">✕</button>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ============== LEADERBOARD ============== */
+async function renderBoard(){
+  const list = document.getElementById('boardList');
+  list.innerHTML = '<div class="empty-state"><p>Загрузка доски...</p></div>';
+  const all = await loadAllLeaderboard();
+
+  let filtered = all;
+  if(currentBoardPeriod !== 'all'){
+    // for week/month we only have totalKm cumulative in shared storage,
+    // so we approximate using own data for self and fallback to total for others
+  }
+
+  filtered.sort((a,b)=> b.totalKm - a.totalKm);
+
+  if(filtered.length===0){
+    list.innerHTML = '<div class="empty-state"><div class="ic">○</div><p>Пока никто не добавил тренировки</p></div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map((entry,idx)=>{
+    const rank = idx+1;
+    const isMe = currentUser && entry.key===currentUser.key;
+    let rankClass = '';
+    if(rank===1) rankClass='top1'; else if(rank===2) rankClass='top2'; else if(rank===3) rankClass='top3';
+    const delay = Math.min(idx*0.04, 0.4);
+    return `
+      <div class="lb-item ${isMe?'me':''}" style="animation-delay:${delay}s;">
+        <div class="lb-rank ${rankClass}">${rank}</div>
+        <div class="lb-name">
+          <div class="n">${escapeHtml(entry.name)}${isMe?' (ты)':''}</div>
+        </div>
+        <div class="lb-km">${entry.totalKm.toFixed(1)}<span class="u"> км</span></div>
+      </div>
+    `;
+  }).join('');
+}
+
+function switchBoardPeriod(p){
+  currentBoardPeriod = p;
+  document.querySelectorAll('.pswitch-btn').forEach(b=>b.classList.toggle('active', b.dataset.p===p));
+  renderBoard();
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function checkGoalAchievement(){
+  if(!goal || goal.achieved) return false;
+  const progressKm = workouts.filter(w=>new Date(w.date)>=new Date(goal.startDate)).reduce((s,w)=>s+w.dist,0);
+  if(progressKm >= goal.targetKm){
+    goal.achieved = true;
+    await saveGoalData(currentUser.key, goal);
+    showGoalWinOverlay();
+    return true;
+  }
+  return false;
+}
+
+function showGoalWinOverlay(){
+  document.getElementById('goalWinText').textContent = `Ты прошёл ${goal.targetKm} км — цель закрыта. Время поставить новую.`;
+  document.getElementById('goalWinOverlay').classList.remove('hidden');
+}
+function closeGoalWinOverlay(){
+  document.getElementById('goalWinOverlay').classList.add('hidden');
+}
+function openGoalModalFromWin(){
+  closeGoalWinOverlay();
+  switchTab('goal');
+  openGoalModal();
+}
+
+/* ============== GOAL SCREEN ============== */
+function renderGoalScreen(){
+  const el = document.getElementById('goalScreenContent');
+  if(!goal){
+    el.innerHTML = `
+      <div class="goal-empty">
+        <p>Цель пока не поставлена.<br>Выбери дистанцию и срок — будем следить за прогрессом вместе.</p>
+        <button class="btn btn-primary" onclick="openGoalModal()" style="margin-top:14px;">Поставить цель</button>
+      </div>
+    `;
+    return;
+  }
+  const progressKm = workouts.filter(w=>new Date(w.date)>=new Date(goal.startDate)).reduce((s,w)=>s+w.dist,0);
+  const pct = Math.min(100, Math.round((progressKm/goal.targetKm)*100));
+  const daysLeft = Math.max(0, Math.ceil((new Date(goal.deadline) - new Date())/86400000));
+  const goalTitle = goal.achieved ? `Цель достигнута — ${goal.targetKm} км` : `${goal.targetKm} км до цели`;
+  el.innerHTML = `
+    <div class="goal-card" style="margin-bottom:18px;">
+      <div class="goal-top">
+        <span class="goal-name">${goalTitle}</span>
+        <span class="goal-pct">${pct}%</span>
+      </div>
+      <div class="goal-bar-track"><div class="goal-bar-fill" style="width:${pct}%;"></div></div>
+      <div class="goal-sub">
+        <span>${progressKm.toFixed(1)} км пройдено</span>
+        <span>${daysLeft} дней осталось</span>
+      </div>
+    </div>
+    <button class="btn btn-secondary" onclick="openGoalModal()" style="margin-bottom:10px;">Изменить цель</button>
+    <button class="btn btn-ghost" onclick="clearGoal()">Удалить цель</button>
+  `;
+}
+
+function openGoalModal(){
+  document.getElementById('goalDistInput').value = goal ? goal.targetKm : '';
+  document.getElementById('goalDateInput').value = goal ? goal.deadline : '';
+  document.getElementById('goalOverlay').classList.remove('hidden');
+}
+function closeGoalModal(){
+  document.getElementById('goalOverlay').classList.add('hidden');
+}
+async function saveGoal(){
+  const dist = parseFloat(document.getElementById('goalDistInput').value);
+  const deadline = document.getElementById('goalDateInput').value;
+  if(!dist || dist<=0){ showToast('Укажи дистанцию цели'); return; }
+  if(!deadline){ showToast('Укажи срок'); return; }
+  goal = {
+    targetKm: dist,
+    deadline: deadline,
+    startDate: new Date().toISOString().slice(0,10),
+    achieved: false
+  };
+  await saveGoalData(currentUser.key, goal);
+  closeGoalModal();
+  showToast('Цель сохранена');
+  renderGoalScreen();
+  renderGoalPreview();
+}
+async function clearGoal(){
+  if(!confirm('Удалить текущую цель?')) return;
+  goal = null;
+  await saveGoalData(currentUser.key, null);
+  renderGoalScreen();
+  renderGoalPreview();
+}
+
+/* ============== ACHIEVEMENTS ============== */
+function openAchModal(){
+  document.getElementById('achNameInput').value = '';
+  document.getElementById('achDateInput').value = new Date().toISOString().slice(0,10);
+  document.getElementById('achDistInput').value = '';
+  document.getElementById('achTimeInput').value = '';
+  document.getElementById('achNoteInput').value = '';
+  document.getElementById('achOverlay').classList.remove('hidden');
+}
+function closeAchModal(){
+  document.getElementById('achOverlay').classList.add('hidden');
+}
+async function saveAchievement(){
+  const name = document.getElementById('achNameInput').value.trim();
+  const date = document.getElementById('achDateInput').value;
+  const dist = parseFloat(document.getElementById('achDistInput').value);
+  const time = document.getElementById('achTimeInput').value.trim();
+  const note = document.getElementById('achNoteInput').value.trim();
+
+  if(!name){ showToast('Укажи название забега'); return; }
+  if(!date){ showToast('Укажи дату'); return; }
+  if(!dist || dist<=0){ showToast('Укажи дистанцию'); return; }
+
+  achievements.push({
+    id: Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    name: name, date: date, dist: dist, time: time||null, note: note||null
+  });
+  achievements.sort((a,b)=> new Date(b.date) - new Date(a.date));
+  await saveAchievements(currentUser.key, achievements);
+
+  closeAchModal();
+  showToast('Забег добавлен');
+  renderAchievements();
+}
+async function deleteAchievement(id){
+  if(!confirm('Удалить этот забег?')) return;
+  achievements = achievements.filter(a=>a.id!==id);
+  await saveAchievements(currentUser.key, achievements);
+  renderAchievements();
+}
+function renderAchievements(){
+  const list = document.getElementById('achievementsList');
+  document.getElementById('achCount').textContent = achievements.length ? achievements.length+' забег(ов)' : '';
+
+  if(achievements.length===0){
+    list.innerHTML = '<div class="empty-state"><div class="ic">○</div><p>Пока нет ни одного забега.<br>Добавь свой первый старт на соревнованиях.</p></div>';
+    return;
+  }
+
+  list.innerHTML = achievements.map((a,idx)=>{
+    const dt = formatDateShort(a.date);
+    const delay = Math.min(idx*0.04, 0.4);
+    return `
+      <div class="wk-item" style="animation-delay:${delay}s;align-items:flex-start;">
+        <div class="wk-date"><div class="d">${dt.d}</div><div class="m">${dt.m}</div></div>
+        <div class="wk-mid">
+          <div class="wk-dist">${escapeHtml(a.name)}</div>
+          <div class="wk-meta">${a.dist} км${a.time ? ' · '+escapeHtml(a.time) : ''}${a.note ? ' · '+escapeHtml(a.note) : ''}</div>
+        </div>
+        <button class="wk-del" onclick="deleteAchievement('${a.id}')">✕</button>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ============== MONTHLY ARCHIVE TAB ============== */
+const ALL_TIME_FACTS = {
+  dist: [
+    {min:0, max:50, text:d=>`Ты пробежал ${d} км — это уже больше, чем многие проходят пешком за неделю`},
+    {min:50, max:150, text:d=>`${d} км в сумме — это дистанция от Воронежа до Липецка`},
+    {min:150, max:300, text:d=>`${d} км — это как если бы ты пробежал от Москвы до Тулы и обратно`},
+    {min:300, max:600, text:d=>`${d} км — это больше, чем 7 марафонов подряд`},
+    {min:600, max:1200, text:d=>`${d} км — расстояние от Воронежа до Санкт-Петербурга по прямой`},
+    {min:1200, max:Infinity, text:d=>`${d} км — ты мог бы добежать от Москвы почти до Парижа`}
+  ],
+  count: [
+    {min:0, max:5, text:c=>`${c} тренировок — отличное начало пути`},
+    {min:5, max:20, text:c=>`${c} тренировок — это уже привычка, а не разовый порыв`},
+    {min:20, max:50, text:c=>`${c} тренировок — столько раз ты выбрал себя вместо дивана`},
+    {min:50, max:100, text:c=>`${c} тренировок — это полноценная беговая дисциплина`},
+    {min:100, max:Infinity, text:c=>`${c} тренировок — ты уже не любитель, ты практик`}
+  ],
+  movingTimeSec: [
+    {min:0, max:18000, text:s=>`Ты провёл в движении ${Math.round(s/3600)} ч — это как один длинный фильм`},
+    {min:18000, max:72000, text:s=>`${Math.round(s/3600)} часов в движении — это больше суток непрерывного бега`},
+    {min:72000, max:180000, text:s=>`${Math.round(s/3600)} часов в движении — целая рабочая неделя, но в кроссовках`},
+    {min:180000, max:Infinity, text:s=>`${Math.round(s/3600)} часов в движении — это уже несколько суток жизни, потраченных на себя`}
+  ]
+};
+
+function pickFact(category, value){
+  const ranges = ALL_TIME_FACTS[category];
+  if(!ranges) return null;
+  const range = ranges.find(r=> value>=r.min && value<r.max);
+  return range ? range.text(Math.round(value*10)/10) : null;
+}
+
+function renderAllTimeFactCard(){
+  const totalDist = workouts.reduce((s,w)=>s+w.dist,0);
+  const totalCount = workouts.length;
+  const totalSec = workouts.reduce((s,w)=>s+w.timeSec,0);
+
+  const card = document.getElementById('allTimeFactCard');
+  if(totalCount===0){
+    card.innerHTML = '<div class="goal-empty">Как только появятся тренировки — здесь будет интересный факт о тебе</div>';
+    return;
+  }
+
+  const distFact = pickFact('dist', totalDist);
+  const countFact = pickFact('count', totalCount);
+  const timeFact = pickFact('movingTimeSec', totalSec);
+  const facts = [distFact, countFact, timeFact].filter(Boolean);
+  const fact = facts[Math.floor(Math.random()*facts.length)];
+
+  card.innerHTML = `
+    <div class="goal-card" style="margin-bottom:18px;">
+      <div class="goal-top" style="margin-bottom:8px;">
+        <span class="goal-name">За всё время</span>
+      </div>
+      <p style="font-size:15px;line-height:1.5;font-weight:600;">${fact}</p>
+    </div>
+  `;
+}
+
+function renderArchiveList(){
+  const list = document.getElementById('archiveList');
+  const monthKeys = Object.keys(monthlyArchive).sort().reverse();
+
+  if(monthKeys.length===0){
+    list.innerHTML = '<div class="empty-state"><div class="ic">○</div><p>Архив появится после завершения первого месяца тренировок</p></div>';
+    return;
+  }
+
+  list.innerHTML = monthKeys.map((mk,idx)=>{
+    const summary = monthlyArchive[mk];
+    const [year, month] = mk.split('-');
+    const monthName = MONTHS_RU_FULL[parseInt(month)-1];
+    const delay = Math.min(idx*0.04, 0.4);
+    return `
+      <div class="wk-item" style="animation-delay:${delay}s;flex-direction:column;align-items:stretch;gap:8px;">
+        <div class="wk-dist" style="text-transform:capitalize;">${monthName} ${year}</div>
+        <div class="stat-grid three" style="margin:0;">
+          <div class="stat-card" style="padding:8px 10px;">
+            <div class="stat-label" style="font-size:9px;">Дистанция</div>
+            <div class="stat-value lime" style="font-size:15px;">${summary.dist}<span class="unit" style="font-size:10px;">км</span></div>
+          </div>
+          <div class="stat-card" style="padding:8px 10px;">
+            <div class="stat-label" style="font-size:9px;">Тренировок</div>
+            <div class="stat-value" style="font-size:15px;">${summary.count}</div>
+          </div>
+          <div class="stat-card" style="padding:8px 10px;">
+            <div class="stat-label" style="font-size:9px;">Темп</div>
+            <div class="stat-value" style="font-size:13px;">${summary.avgPaceSec ? formatPace(summary.avgPaceSec) : '—'}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ============== MOTIVATION TOAST ============== */
+const MOTIVATION_PHRASES = [
+  "Ещё один шаг к новой версии себя",
+  "Тело помнит каждую тренировку",
+  "Ты сегодня сильнее, чем вчера",
+  "Километры не лгут, ты молодец",
+  "Прогресс строится из таких дней",
+  "Дисциплина победила лень",
+  "Твой пульс знает, что ты не сдаёшься",
+  "Каждая пробежка — вклад в будущего тебя",
+  "Это упорство уже видно по цифрам",
+  "Бег к себе продолжается",
+  "Ты сделал то, на что многие не решаются",
+  "Асфальт под ногами стал чуточку твоим",
+  "Сильные привычки строятся именно так",
+  "Эта тренировка уже в твоей истории",
+  "Маленький шаг, но он точно засчитан",
+  "Тело благодарит тебя за заботу",
+  "Ты выбрал движение вместо оправданий",
+  "Воля сильнее усталости",
+  "Стабильность творит чудеса",
+  "Твой график прогрессии радуется",
+  "Сегодня ты обогнал вчерашнего себя",
+  "Каждый круг по дистанции — это характер",
+  "Ты тренируешь не только тело, но и волю",
+  "Это именно то постоянство, которое работает",
+  "Твоя выносливость растёт незаметно, но верно",
+  "Отличная работа, продолжай в том же духе",
+  "Бег — лучшая инвестиция в самочувствие",
+  "Ты на шаг ближе к своей цели",
+  "Дыхание сбилось, но цель стала ближе",
+  "Это твоя личная победа сегодня",
+  "Так строится результат — тренировка за тренировкой",
+  "Ты держишь обещание, данное себе",
+  "Твой темп говорит сам за себя",
+  "Сильные люди продолжают, даже когда не хочется",
+  "Эта пробежка прибавила тебе уверенности",
+  "Ты создаёшь привычку, которая изменит всё",
+  "Каждый километр — кирпич в фундаменте формы",
+  "Твоя решительность сегодня впечатляет",
+  "Путь к цели стал ещё немного короче",
+  "Ноги устали, но характер закалился",
+  "Ты снова доказал себе, что можешь",
+  "Регулярность — твоя суперсила",
+  "Тренировка записана, прогресс не остановить",
+  "Так и рождаются результаты — шаг за шагом",
+  "Твоя выносливость сегодня сделала ещё один скачок",
+  "Отличный темп, отличная работа",
+  "Маленькая победа сегодня — большой результат завтра",
+  "Продолжай, твой прогресс уже впечатляет",
+  "Каждая тренировка приближает тебя к лучшей форме",
+  "Ты держишь темп и держишь слово себе"
+];
+
+function showMotivationToast(){
+  const phrase = MOTIVATION_PHRASES[Math.floor(Math.random()*MOTIVATION_PHRASES.length)];
+  const el = document.getElementById('motivationToast');
+  document.getElementById('motivationText').textContent = phrase;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 3800);
+}
+
+/* ============== NEW MONTH OVERLAY ============== */
+const NEW_MONTH_PHRASES = [
+  "Прошлый месяц уже в архиве. Новый — чистый лист, и он твой",
+  "Счётчик на нуле, но твой опыт никуда не делся",
+  "Каждый новый месяц — это новый шанс удивить себя",
+  "Старые километры в архиве, новые ждут впереди",
+  "Свежий месяц, свежие силы, тот же характер",
+  "Прошлый месяц был тренировкой. Этот — результат",
+  "Новая страница в дневнике прогрессии открыта",
+  "Месяц обновился, цель остаётся той же — двигаться",
+  "Время подвести итоги прошлого и бежать дальше",
+  "Новый отрезок дистанции под названием месяц",
+  "Чистый месяц — это просто новая возможность, не давление",
+  "Старт нового месяца. Темп выбираешь ты"
+];
+
+function showNewMonthOverlay(){
+  const now = new Date();
+  const phrase = NEW_MONTH_PHRASES[Math.floor(Math.random()*NEW_MONTH_PHRASES.length)];
+  document.getElementById('newMonthTitle').textContent = MONTHS_RU_FULL[now.getMonth()].charAt(0).toUpperCase()+MONTHS_RU_FULL[now.getMonth()].slice(1)+' начался';
+  document.getElementById('newMonthPhrase').textContent = phrase;
+  document.getElementById('newMonthOverlay').classList.remove('hidden');
+}
+function closeNewMonthOverlay(){
+  document.getElementById('newMonthOverlay').classList.add('hidden');
+  newMonthStarted = false;
+}
+
+/* ============== TOAST ============== */
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* ============== EXPOSE TO WINDOW (needed for inline onclick in ES module) ============== */
+window.doLogin = doLogin;
+window.doRegister = doRegister;
+window.confirmCodeSaved = confirmCodeSaved;
+window.switchLoginMode = switchLoginMode;
+window.logout = logout;
+window.switchTab = switchTab;
+window.openAddModal = openAddModal;
+window.closeAddModal = closeAddModal;
+window.updateComputedPace = updateComputedPace;
+window.saveWorkout = saveWorkout;
+window.deleteWorkout = deleteWorkout;
+window.switchBoardPeriod = switchBoardPeriod;
+window.openGoalModal = openGoalModal;
+window.closeGoalModal = closeGoalModal;
+window.saveGoal = saveGoal;
+window.clearGoal = clearGoal;
+window.closeNewMonthOverlay = closeNewMonthOverlay;
+window.closeGoalWinOverlay = closeGoalWinOverlay;
+window.openGoalModalFromWin = openGoalModalFromWin;
+window.openAchModal = openAchModal;
+window.closeAchModal = closeAchModal;
+window.saveAchievement = saveAchievement;
+window.deleteAchievement = deleteAchievement;
+
+/* ============== INIT ============== */
+window.addEventListener('DOMContentLoaded', ()=>{
+  tryAutoLogin();
+  document.getElementById('regNameInput').addEventListener('keydown', (e)=>{
+    if(e.key==='Enter') document.getElementById('regPasswordInput').focus();
+  });
+  document.getElementById('regPasswordInput').addEventListener('keydown', (e)=>{
+    if(e.key==='Enter') doRegister();
+  });
+  document.getElementById('loginCodeInput').addEventListener('keydown', (e)=>{
+    if(e.key==='Enter') document.getElementById('loginPassword').focus();
+  });
+  document.getElementById('loginPassword').addEventListener('keydown', (e)=>{
+    if(e.key==='Enter') doLogin();
+  });
+});
+</script>
+</body>
+</html>
